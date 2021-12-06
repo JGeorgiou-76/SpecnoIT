@@ -1,5 +1,11 @@
+using System.Text;
 using API.Data;
+using API.Extensions;
+using API.Interfaces;
+using API.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
 namespace API
@@ -16,13 +22,17 @@ namespace API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            //Adding the Connection String for the Database
-            services.AddDbContext<DataContext>(options => {
-                options.UseSqlite(_config.GetConnectionString("DefaultConnection"));
-            });
+            //Adding Extention Methods to clean up the startup Class
+            //Adding our created extention service for the Token created for users and the Connection String to our Database
+            services.AddApplicationServices(_config);
 
             services.AddControllers();
 
+            //service.addCors();
+
+            //Adding our created Identity service to Authenticate the Users
+            services.AddIdentityServices(_config);
+           
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebAPIv5", Version = "v1" });
@@ -43,6 +53,9 @@ namespace API
 
             app.UseRouting();
 
+            //app.UseCors();
+
+            app.UseAuthentication();           
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
