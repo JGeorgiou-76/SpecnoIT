@@ -13,6 +13,6 @@ namespace API.Interfaces
         Task<bool> SaveAllAsync();
         Task<IEnumerable<Posts>> GetPostsAsync();
         Task<Posts> GetPostByIdAsync(int id);
-        Task<IEnumerable<Posts>> GetPostsByUsernameAsync(string username);
+        Task<IEnumerable<PostsDto>> GetPostsByUsernameAsync(string username);
     }
 }

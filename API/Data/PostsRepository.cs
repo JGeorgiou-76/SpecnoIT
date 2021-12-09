@@ -6,6 +6,7 @@ using API.DTOs;
 using API.Entities;
 using API.Interfaces;
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Data
@@ -30,9 +31,12 @@ namespace API.Data
             return await _context.Posts.ToListAsync();
         }
 
-        public async Task<IEnumerable<Posts>> GetPostsByUsernameAsync(string username)
+        public async Task<IEnumerable<PostsDto>> GetPostsByUsernameAsync(string username)
         {
-            return await _context.Posts.Where(x => x.AppUser.UserName == username).ToListAsync();
+            return await _context.Posts
+                .Where(x => x.AppUser.UserName == username)
+                .ProjectTo<PostsDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
         }
 
         public async Task<bool> SaveAllAsync()

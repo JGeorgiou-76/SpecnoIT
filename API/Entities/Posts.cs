@@ -6,6 +6,6 @@ namespace API.Entities
         public string Post { get; set; }
         public AppUser AppUser { get; set; }
         public int AppUserId { get; set; }
-        //public ICollection<Comments> MyProperty { get; set; }
+        public ICollection<Comments> Comments { get; set; }
     }
-}
+}   

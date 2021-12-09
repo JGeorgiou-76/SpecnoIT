@@ -15,8 +15,10 @@ namespace API.Controllers
         private readonly IUserRepository _userRepository;
         private readonly IMapper _mapper;
         private readonly IPostsRepository _postsRepository;
-        public UsersController(IUserRepository userRepository, IMapper mapper, IPostsRepository postsRepository)
+        private readonly DataContext _context;
+        public UsersController(DataContext context, IUserRepository userRepository, IMapper mapper, IPostsRepository postsRepository)
         {
+            _context = context;
             _postsRepository = postsRepository;
             _mapper = mapper;
             _userRepository = userRepository;
@@ -52,7 +54,7 @@ namespace API.Controllers
                 AppUser = user
             };
 
-            user.Posts.Add(newPost);
+            _context.Posts.Add(newPost);
 
             if(await _userRepository.SaveAllAsync()){
                 return _mapper.Map<PostsDto>(newPost);
@@ -72,6 +74,10 @@ namespace API.Controllers
 
             if(selectedPost == null)
                 return NotFound();
+
+            if(postsDto.AppUserId != selectedPost.AppUserId){
+                postsDto.AppUserId = selectedPost.AppUserId;
+            }
 
             _mapper.Map(postsDto, selectedPost);
 
@@ -95,7 +101,7 @@ namespace API.Controllers
             if(selectedPost == null)
                 return NotFound();
             
-            user.Posts.Remove(selectedPost);
+            _context.Posts.Remove(selectedPost);
 
             if(await _userRepository.SaveAllAsync())
                 return Ok();
@@ -105,7 +111,7 @@ namespace API.Controllers
 
         //Function to get all the posts of a logged in User
         [HttpGet("my-posts")]
-        public async Task<IEnumerable<Posts>> GetUserPosts() {
+        public async Task<IEnumerable<PostsDto>> GetUserPosts() {
             var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             return await _postsRepository.GetPostsByUsernameAsync(username);
@@ -113,9 +119,38 @@ namespace API.Controllers
 
         //Function to get all the posts of a specific User
         [HttpGet("user-posts/{username}")]
-        public async Task<IEnumerable<Posts>> GetPostsByUsername(string username) {
+        public async Task<IEnumerable<PostsDto>> GetPostsByUsername(string username) {
 
             return await _postsRepository.GetPostsByUsernameAsync(username);
+        }
+
+        [HttpPost("create-comment")]
+        public async Task<ActionResult<CommentsDto>> CreateNewComment(CommentsDto commentsDto){
+            //This Variable gets the username from the token 
+            var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            var user = await _userRepository.GetAppUserByUsernameAsync(username);
+
+            var post = await _postsRepository.GetPostByIdAsync(commentsDto.PostId);
+
+            if(commentsDto.Comment == null)
+                return BadRequest("Cannot Create an Empty Comment");
+
+            var newComment = new Comments{
+                Comment = commentsDto.Comment,
+                PostId = commentsDto.PostId,
+                AppUserId = user.Id,
+                AppUser = user,
+                Post = post
+            };
+
+            _context.Comments.Add(newComment);
+        
+            if(await _postsRepository.SaveAllAsync()){
+                return _mapper.Map<CommentsDto>(newComment);
+            }
+
+            return BadRequest("Problem Creating New Post");
         }
     }   
 }
