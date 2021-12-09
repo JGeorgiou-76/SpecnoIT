@@ -3,6 +3,7 @@ using System;
 using API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace API.Data.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20211209164559_AddedLikedPostsTable")]
+    partial class AddedLikedPostsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "6.0.0");
@@ -67,28 +69,6 @@ namespace API.Data.Migrations
                     b.ToTable("Comments");
                 });
 
-            modelBuilder.Entity("API.Entities.LikedComments", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("CommentsId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("Liked")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CommentsId");
-
-                    b.ToTable("LikedComments");
-                });
-
             modelBuilder.Entity("API.Entities.LikedPosts", b =>
                 {
                     b.Property<int>("Id")
@@ -98,7 +78,10 @@ namespace API.Data.Migrations
                     b.Property<bool>("Liked")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("PostsId")
+                    b.Property<int>("PostId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("PostsId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("UserId")
@@ -149,24 +132,11 @@ namespace API.Data.Migrations
                     b.Navigation("Post");
                 });
 
-            modelBuilder.Entity("API.Entities.LikedComments", b =>
-                {
-                    b.HasOne("API.Entities.Comments", "Comments")
-                        .WithMany("LikedComments")
-                        .HasForeignKey("CommentsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Comments");
-                });
-
             modelBuilder.Entity("API.Entities.LikedPosts", b =>
                 {
                     b.HasOne("API.Entities.Posts", "Posts")
                         .WithMany("LikedPosts")
-                        .HasForeignKey("PostsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("PostsId");
 
                     b.Navigation("Posts");
                 });
@@ -185,11 +155,6 @@ namespace API.Data.Migrations
             modelBuilder.Entity("API.Entities.AppUser", b =>
                 {
                     b.Navigation("Posts");
-                });
-
-            modelBuilder.Entity("API.Entities.Comments", b =>
-                {
-                    b.Navigation("LikedComments");
                 });
 
             modelBuilder.Entity("API.Entities.Posts", b =>

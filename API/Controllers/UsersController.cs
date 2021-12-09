@@ -16,7 +16,10 @@ namespace API.Controllers
         private readonly IMapper _mapper;
         private readonly IPostsRepository _postsRepository;
         private readonly DataContext _context;
-        public UsersController(DataContext context, IUserRepository userRepository, IMapper mapper, IPostsRepository postsRepository)
+        public UsersController(DataContext context, 
+                                IUserRepository userRepository, 
+                                IMapper mapper, 
+                                IPostsRepository postsRepository)
         {
             _context = context;
             _postsRepository = postsRepository;
@@ -69,15 +72,17 @@ namespace API.Controllers
             var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             var user = await _userRepository.GetAppUserByUsernameAsync(username);
+
+            postsDto.AppUserId = user.Id;
             
             var selectedPost = user.Posts.FirstOrDefault(x => x.Id == postsDto.Id);
 
             if(selectedPost == null)
                 return NotFound();
 
-            if(postsDto.AppUserId != selectedPost.AppUserId){
-                postsDto.AppUserId = selectedPost.AppUserId;
-            }
+            //Check to make sure that the User ID matched the UserId of the Post that is being updated, A User can only update their Posts
+            if(postsDto.AppUserId != selectedPost.AppUserId)
+                return BadRequest("Cannot Update another Users Post");         
 
             _mapper.Map(postsDto, selectedPost);
 
@@ -124,6 +129,7 @@ namespace API.Controllers
             return await _postsRepository.GetPostsByUsernameAsync(username);
         }
 
+        //Function to Create comments on posts
         [HttpPost("create-comment")]
         public async Task<ActionResult<CommentsDto>> CreateNewComment(CommentsDto commentsDto){
             //This Variable gets the username from the token 
@@ -131,7 +137,11 @@ namespace API.Controllers
 
             var user = await _userRepository.GetAppUserByUsernameAsync(username);
 
+            //Getting the Specific post that the comment is to be attached too by the Post ID
             var post = await _postsRepository.GetPostByIdAsync(commentsDto.PostId);
+
+            if(post == null)
+                return BadRequest("Post does not Exist");
 
             if(commentsDto.Comment == null)
                 return BadRequest("Cannot Create an Empty Comment");
@@ -150,7 +160,79 @@ namespace API.Controllers
                 return _mapper.Map<CommentsDto>(newComment);
             }
 
-            return BadRequest("Problem Creating New Post");
+            return BadRequest("Problem Creating New Comment");
+        }
+
+        //Function to like a Post
+        [HttpPost("like-post")]
+        public async Task<ActionResult<LikedPostsDto>> LikePost(LikedPostsDto likedPostsDto){
+            //This Variable gets the username from the token 
+            var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            var user = await _userRepository.GetAppUserByUsernameAsync(username);
+
+            //Getting the Specific post that will be liked or Disliked via the postID
+            var post = await _postsRepository.GetPostByIdAsync(likedPostsDto.PostsId);
+
+            if(post == null)
+                return BadRequest("Post does not Exist");
+
+            
+            var newLikedPost = new LikedPosts{
+                PostsId = post.Id,
+                Posts = post,
+                UserId = user.Id,
+                Liked = likedPostsDto.Liked
+            };
+
+            _context.LikedPosts.Add(newLikedPost);
+
+            if(await _postsRepository.SaveAllAsync()){
+                return _mapper.Map<LikedPostsDto>(newLikedPost);
+            }
+
+            return BadRequest("Problem Liking post");
+        }
+
+        //Function to like a Comment
+        [HttpPost("like-comment")]
+        public async Task<ActionResult<LikedCommentsDto>> LikeComment(LikedCommentsDto likedCommentsDto){
+            //This Variable gets the username from the token 
+            var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            var user = await _userRepository.GetAppUserByUsernameAsync(username);
+
+            //Getting the Specific comment that will be liked or Disliked via the postID
+            var comment = await _postsRepository.GetCommentByIdAsync(likedCommentsDto.CommentsId);
+
+            if(comment == null)
+                return BadRequest("Post does not Exist");
+
+            
+            var newLikedComment = new LikedComments{
+                CommentsId = comment.Id,
+                Comments = comment,
+                UserId = user.Id,
+                Liked = likedCommentsDto.Liked
+            };
+
+            _context.LikedComments.Add(newLikedComment);
+
+            if(await _postsRepository.SaveAllAsync()){
+                return _mapper.Map<LikedCommentsDto>(newLikedComment);
+            }
+
+            return BadRequest("Problem Liking Comment");
+        }
+
+        [HttpGet("liked-posts")]
+        public async Task<IEnumerable<LikedPostsDto>> GetPostsUserHasLiked() {
+            //This Variable gets the username from the token 
+            var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            var user = await _userRepository.GetAppUserByUsernameAsync(username);
+
+            return await _postsRepository.GetPostsUserHasLikedAsync(user.Id);
         }
     }   
 }

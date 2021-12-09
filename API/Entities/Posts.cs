@@ -7,5 +7,6 @@ namespace API.Entities
         public AppUser AppUser { get; set; }
         public int AppUserId { get; set; }
         public ICollection<Comments> Comments { get; set; }
+        public ICollection<LikedPosts> LikedPosts { get; set; }
     }
 }   

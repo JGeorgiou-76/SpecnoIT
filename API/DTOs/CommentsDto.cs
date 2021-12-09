@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using API.Entities;
 
 namespace API.DTOs
 {
@@ -11,5 +12,6 @@ namespace API.DTOs
         public string Comment { get; set; }
         public int PostId { get; set; }
         public int AppUserId { get; set; }
+        public ICollection<LikedComments> LikedComments { get; set; } 
     }
 }

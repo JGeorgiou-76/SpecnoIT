@@ -21,6 +21,16 @@ namespace API.Data
             _mapper = mapper;
         }
 
+        public async Task<Comments> GetCommentByIdAsync(int id)
+        {
+            return await _context.Comments.FindAsync(id);
+        }
+
+        // public int Countlikes(int postId)
+        // {
+        //     return _context.LikedPosts.Where(x => x.PostId == postId && x.Liked).Count();
+        // }
+
         public async Task<Posts> GetPostByIdAsync(int id)
         {
             return await _context.Posts.FindAsync(id);
@@ -34,8 +44,17 @@ namespace API.Data
         public async Task<IEnumerable<PostsDto>> GetPostsByUsernameAsync(string username)
         {
             return await _context.Posts
+                .Include(x => x.Comments)
                 .Where(x => x.AppUser.UserName == username)
-                .ProjectTo<PostsDto>(_mapper.ConfigurationProvider)
+                .ProjectTo<PostsDto>(_mapper.ConfigurationProvider)             
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<LikedPostsDto>> GetPostsUserHasLikedAsync(int userId)
+        {
+            return await _context.LikedPosts
+                .Where(x => x.UserId == userId)
+                .ProjectTo<LikedPostsDto>(_mapper.ConfigurationProvider)                
                 .ToListAsync();
         }
 
