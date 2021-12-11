@@ -15,14 +15,17 @@ namespace API.Controllers
         private readonly IUserRepository _userRepository;
         private readonly IMapper _mapper;
         private readonly IPostsRepository _postsRepository;
+        private readonly ICommentsRepository _commentsRepository;
         private readonly DataContext _context;
         public UsersController(DataContext context, 
                                 IUserRepository userRepository, 
                                 IMapper mapper, 
-                                IPostsRepository postsRepository)
+                                IPostsRepository postsRepository,
+                                ICommentsRepository commentsRepository)
         {
             _context = context;
             _postsRepository = postsRepository;
+            _commentsRepository = commentsRepository;
             _mapper = mapper;
             _userRepository = userRepository;
         }
@@ -126,7 +129,7 @@ namespace API.Controllers
         [HttpGet("user-posts/{username}")]
         public async Task<IEnumerable<PostsDto>> GetPostsByUsername(string username) {
 
-            return await _postsRepository.GetPostsByUsernameAsync(username);
+            return await _postsRepository.GetPostsByUsernameAsync(username.ToLower());
         }
 
         //Function to Create comments on posts
@@ -138,7 +141,7 @@ namespace API.Controllers
             var user = await _userRepository.GetAppUserByUsernameAsync(username);
 
             //Getting the Specific post that the comment is to be attached too by the Post ID
-            var post = await _postsRepository.GetPostByIdAsync(commentsDto.PostId);
+            var post = await _postsRepository.GetPostByIdAsync(commentsDto.PostsId);
 
             if(post == null)
                 return BadRequest("Post does not Exist");
@@ -148,15 +151,13 @@ namespace API.Controllers
 
             var newComment = new Comments{
                 Comment = commentsDto.Comment,
-                PostId = commentsDto.PostId,
-                AppUserId = user.Id,
-                AppUser = user,
-                Post = post
+                PostsId = commentsDto.PostsId,
+                AppUserId = user.Id
             };
 
             _context.Comments.Add(newComment);
         
-            if(await _postsRepository.SaveAllAsync()){
+            if(await _commentsRepository.SaveAllAsync()){
                 return _mapper.Map<CommentsDto>(newComment);
             }
 
@@ -174,13 +175,16 @@ namespace API.Controllers
             //Getting the Specific post that will be liked or Disliked via the postID
             var post = await _postsRepository.GetPostByIdAsync(likedPostsDto.PostsId);
 
+            likedPostsDto.UserId = user.Id;
+
             if(post == null)
                 return BadRequest("Post does not Exist");
 
+            if(await _postsRepository.LikeCheckOnPostAsync(likedPostsDto))
+                return BadRequest("User has already Voted on the Post");
             
             var newLikedPost = new LikedPosts{
                 PostsId = post.Id,
-                Posts = post,
                 UserId = user.Id,
                 Liked = likedPostsDto.Liked
             };
@@ -203,22 +207,25 @@ namespace API.Controllers
             var user = await _userRepository.GetAppUserByUsernameAsync(username);
 
             //Getting the Specific comment that will be liked or Disliked via the postID
-            var comment = await _postsRepository.GetCommentByIdAsync(likedCommentsDto.CommentsId);
+            var comment = await _commentsRepository.GetCommentByIdAsync(likedCommentsDto.CommentsId);
+
+            likedCommentsDto.UserId = user.Id;
 
             if(comment == null)
-                return BadRequest("Post does not Exist");
+                return BadRequest("Comment does not Exist");
 
-            
+            if(await _commentsRepository.LikeCheckOnCommentAsync(likedCommentsDto))
+                return BadRequest("User has already Voted on the Comment");
+     
             var newLikedComment = new LikedComments{
                 CommentsId = comment.Id,
-                Comments = comment,
                 UserId = user.Id,
                 Liked = likedCommentsDto.Liked
             };
 
             _context.LikedComments.Add(newLikedComment);
 
-            if(await _postsRepository.SaveAllAsync()){
+            if(await _commentsRepository.SaveAllAsync()){
                 return _mapper.Map<LikedCommentsDto>(newLikedComment);
             }
 
@@ -226,7 +233,7 @@ namespace API.Controllers
         }
 
         [HttpGet("liked-posts")]
-        public async Task<IEnumerable<LikedPostsDto>> GetPostsUserHasLiked() {
+        public async Task<List<PostsDto>> GetPostsUserHasLiked() {
             //This Variable gets the username from the token 
             var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 

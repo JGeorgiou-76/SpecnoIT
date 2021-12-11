@@ -11,10 +11,11 @@ namespace API.Interfaces
     {
         void UpdatePost(Posts posts);
         Task<bool> SaveAllAsync();
-        Task<IEnumerable<Posts>> GetPostsAsync();
-        Task<Posts> GetPostByIdAsync(int id);
-        Task<Comments> GetCommentByIdAsync(int id);
+        Task<bool> LikeCheckOnPostAsync(LikedPostsDto likedPostsDto);
+        Task<PostsDto> GetPostDtoByIdAsync(int id); 
+        Task<Posts> GetPostByIdAsync(int id);     
         Task<IEnumerable<PostsDto>> GetPostsByUsernameAsync(string username);
-        Task<IEnumerable<LikedPostsDto>> GetPostsUserHasLikedAsync(int userId);
+        Task<List<PostsDto>> GetPostsUserHasLikedAsync(int userId);
+        Task<IEnumerable<CommentsDto>> GetAllCommentsOnPostAsync(int postId); 
     }
 }

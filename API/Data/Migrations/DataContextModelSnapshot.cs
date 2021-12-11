@@ -55,14 +55,14 @@ namespace API.Data.Migrations
                     b.Property<string>("Comment")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("PostId")
+                    b.Property<int>("PostsId")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
                     b.HasIndex("AppUserId");
 
-                    b.HasIndex("PostId");
+                    b.HasIndex("PostsId");
 
                     b.ToTable("Comments");
                 });
@@ -138,37 +138,33 @@ namespace API.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("API.Entities.Posts", "Post")
+                    b.HasOne("API.Entities.Posts", "Posts")
                         .WithMany("Comments")
-                        .HasForeignKey("PostId")
+                        .HasForeignKey("PostsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("AppUser");
 
-                    b.Navigation("Post");
+                    b.Navigation("Posts");
                 });
 
             modelBuilder.Entity("API.Entities.LikedComments", b =>
                 {
-                    b.HasOne("API.Entities.Comments", "Comments")
+                    b.HasOne("API.Entities.Comments", null)
                         .WithMany("LikedComments")
                         .HasForeignKey("CommentsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Comments");
                 });
 
             modelBuilder.Entity("API.Entities.LikedPosts", b =>
                 {
-                    b.HasOne("API.Entities.Posts", "Posts")
+                    b.HasOne("API.Entities.Posts", null)
                         .WithMany("LikedPosts")
                         .HasForeignKey("PostsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Posts");
                 });
 
             modelBuilder.Entity("API.Entities.Posts", b =>

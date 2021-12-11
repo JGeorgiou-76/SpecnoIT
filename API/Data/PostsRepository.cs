@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using API.DTOs;
 using API.Entities;
 using API.Interfaces;
@@ -19,26 +15,16 @@ namespace API.Data
         {
             _context = context;
             _mapper = mapper;
-        }
+        }   
 
-        public async Task<Comments> GetCommentByIdAsync(int id)
+        public async Task<PostsDto> GetPostDtoByIdAsync(int id)
         {
-            return await _context.Comments.FindAsync(id);
+            return await _context.Posts.ProjectTo<PostsDto>(_mapper.ConfigurationProvider).FirstOrDefaultAsync(x => x.Id == id);
         }
-
-        // public int Countlikes(int postId)
-        // {
-        //     return _context.LikedPosts.Where(x => x.PostId == postId && x.Liked).Count();
-        // }
 
         public async Task<Posts> GetPostByIdAsync(int id)
         {
             return await _context.Posts.FindAsync(id);
-        }
-
-        public async Task<IEnumerable<Posts>> GetPostsAsync()
-        {
-            return await _context.Posts.ToListAsync();
         }
 
         public async Task<IEnumerable<PostsDto>> GetPostsByUsernameAsync(string username)
@@ -50,12 +36,29 @@ namespace API.Data
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<LikedPostsDto>> GetPostsUserHasLikedAsync(int userId)
+        public async Task<IEnumerable<CommentsDto>> GetAllCommentsOnPostAsync(int postId)
         {
-            return await _context.LikedPosts
+            return await _context.Comments
+                .Where(x => x.PostsId == postId)
+                .ProjectTo<CommentsDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+        }
+
+        public async Task<List<PostsDto>> GetPostsUserHasLikedAsync(int userId)
+        {
+            var likedPosts = _context.LikedPosts
                 .Where(x => x.UserId == userId)
                 .ProjectTo<LikedPostsDto>(_mapper.ConfigurationProvider)                
-                .ToListAsync();
+                .ToList();
+
+            var posts = new List<PostsDto> {};
+
+            foreach(var list in likedPosts){
+                var x = await GetPostDtoByIdAsync(list.PostsId);
+                posts.Add(x);  
+            }
+
+            return posts;
         }
 
         public async Task<bool> SaveAllAsync()
@@ -66,6 +69,18 @@ namespace API.Data
         public void UpdatePost(Posts posts)
         {
             _context.Entry(posts).State = EntityState.Modified;
+        }
+
+        public async Task<bool> LikeCheckOnPostAsync(LikedPostsDto likedPostsDto)
+        {
+            var check = await _context.LikedPosts
+                .Where(x => x.PostsId == likedPostsDto.PostsId && x.UserId == likedPostsDto.UserId)
+                .FirstOrDefaultAsync();
+
+            if(check != null)
+                return true;
+            
+            return false;
         }
     }
 }

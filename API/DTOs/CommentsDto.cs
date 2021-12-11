@@ -10,7 +10,7 @@ namespace API.DTOs
     {
         public int Id { get; set; }
         public string Comment { get; set; }
-        public int PostId { get; set; }
+        public int PostsId { get; set; }
         public int AppUserId { get; set; }
         public ICollection<LikedComments> LikedComments { get; set; } 
     }
