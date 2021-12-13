@@ -89,4 +89,5 @@ Get All Posts User has Upvoted/Downvoted:
 This concludes the explanation of SpecnoIT.
 
 Thank you for this Opportunity.
+
 Jason Georgiou.
