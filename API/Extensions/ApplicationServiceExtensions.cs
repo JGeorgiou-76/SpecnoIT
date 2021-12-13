@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using API.Data;
 using API.Helpers;
 using API.Interfaces;
@@ -22,8 +17,6 @@ namespace API.Extensions
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IPostsRepository, PostsRepository>();
             services.AddScoped<ICommentsRepository, CommentsRepository>();
-
-            //services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve);
 
             //Adding Auto Mapper
             services.AddAutoMapper(typeof(AutoMapperProfiles).Assembly);

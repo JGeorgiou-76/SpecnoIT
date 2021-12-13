@@ -4,9 +4,7 @@ using API.DTOs;
 using API.Entities;
 using API.Interfaces;
 using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers
 {
@@ -32,27 +30,30 @@ namespace API.Controllers
 
         //Get all Users in the database
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MemberDto>>> GetUsers() {
+        public async Task<ActionResult<IEnumerable<MemberDto>>> GetUsers() 
+        {
             var users = await _userRepository.GetMembersAsync();
 
             return Ok(users);
         }
         //Get the a specific user by their Username
         [HttpGet("{username}")]
-        public async Task<ActionResult<MemberDto>> GetUserByUsername(string username) {
+        public async Task<ActionResult<MemberDto>> GetUserByUsername(string username) 
+        {
             return await _userRepository.GetMemberAsync(username);
         }
 
         //Allow the Logged in user to create a post
         [HttpPost("add-post")]
-        public async Task<ActionResult<PostsDto>> AddPost(PostsDto postsDto) {
+        public async Task<ActionResult<PostsDto>> AddPost(PostsDto postsDto) 
+        {
             //This Variable gets the username from the token 
             var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             var user = await _userRepository.GetAppUserByUsernameAsync(username);
 
-            if(postsDto.Post == null)
-                return BadRequest("Cannot Post an Empty Post");
+            if(postsDto.Post.Length == 0)
+                return BadRequest("Post Cannot Be Empty");
 
             var newPost = new Posts{
                 Post = postsDto.Post,
@@ -70,7 +71,8 @@ namespace API.Controllers
         }
 
         [HttpPut("update-post")]
-        public async Task<ActionResult> UpdatePost(PostsDto postsDto) {
+        public async Task<ActionResult> UpdatePost(PostsDto postsDto) 
+        {
             //This Variable gets the username of the Logged in User from the token 
             var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -78,13 +80,16 @@ namespace API.Controllers
 
             postsDto.AppUserId = user.Id;
             
-            var selectedPost = user.Posts.FirstOrDefault(x => x.Id == postsDto.Id);
+            var selectedPost = await _postsRepository.GetPostByIdAsync(postsDto.Id);
+
+            if(postsDto.Post.Length == 0)
+                return BadRequest("Post Cannot be Empty");
 
             if(selectedPost == null)
                 return NotFound();
 
             //Check to make sure that the User ID matched the UserId of the Post that is being updated, A User can only update their Posts
-            if(postsDto.AppUserId != selectedPost.AppUserId)
+            if(user.Id != selectedPost.AppUserId)
                 return BadRequest("Cannot Update another Users Post");         
 
             _mapper.Map(postsDto, selectedPost);
@@ -98,16 +103,21 @@ namespace API.Controllers
         }
 
         [HttpDelete("delete-post")]
-        public async Task<ActionResult> DeletePost(PostsDto postDto){
+        public async Task<ActionResult> DeletePost(PostsDto postsDto)
+        {
             //This Variable gets the username of the Logged in User from the token 
             var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             var user = await _userRepository.GetAppUserByUsernameAsync(username);
 
-            var selectedPost = user.Posts.FirstOrDefault(x => x.Id == postDto.Id);
+            var selectedPost = await _postsRepository.GetPostByIdAsync(postsDto.Id);
 
             if(selectedPost == null)
                 return NotFound();
+
+            //Check to make sure that the User ID matched the UserId of the Post that is being deleted
+            if(user.Id != selectedPost.AppUserId)
+                return BadRequest("Cannot Delete another Users Post");  
             
             _context.Posts.Remove(selectedPost);
 
@@ -119,7 +129,8 @@ namespace API.Controllers
 
         //Function to get all the posts of a logged in User
         [HttpGet("my-posts")]
-        public async Task<IEnumerable<PostsDto>> GetUserPosts() {
+        public async Task<IEnumerable<PostsDto>> GetUserPosts() 
+        {
             var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             return await _postsRepository.GetPostsByUsernameAsync(username);
@@ -127,14 +138,16 @@ namespace API.Controllers
 
         //Function to get all the posts of a specific User
         [HttpGet("user-posts/{username}")]
-        public async Task<IEnumerable<PostsDto>> GetPostsByUsername(string username) {
+        public async Task<IEnumerable<PostsDto>> GetPostsByUsername(string username) 
+        {
 
             return await _postsRepository.GetPostsByUsernameAsync(username.ToLower());
         }
 
         //Function to Create comments on posts
         [HttpPost("create-comment")]
-        public async Task<ActionResult<CommentsDto>> CreateNewComment(CommentsDto commentsDto){
+        public async Task<ActionResult<CommentsDto>> CreateNewComment(CommentsDto commentsDto)
+        {
             //This Variable gets the username from the token 
             var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -146,7 +159,7 @@ namespace API.Controllers
             if(post == null)
                 return BadRequest("Post does not Exist");
 
-            if(commentsDto.Comment == null)
+            if(commentsDto.Comment.Length == 0)
                 return BadRequest("Cannot Create an Empty Comment");
 
             var newComment = new Comments{
@@ -166,16 +179,17 @@ namespace API.Controllers
 
         //Function to like a Post
         [HttpPost("like-post")]
-        public async Task<ActionResult<LikedPostsDto>> LikePost(LikedPostsDto likedPostsDto){
+        public async Task<ActionResult<LikedPostsDto>> LikePost(LikedPostsDto likedPostsDto)
+        {
             //This Variable gets the username from the token 
             var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             var user = await _userRepository.GetAppUserByUsernameAsync(username);
 
+            likedPostsDto.UserId = user.Id;
+
             //Getting the Specific post that will be liked or Disliked via the postID
             var post = await _postsRepository.GetPostByIdAsync(likedPostsDto.PostsId);
-
-            likedPostsDto.UserId = user.Id;
 
             if(post == null)
                 return BadRequest("Post does not Exist");
@@ -200,16 +214,17 @@ namespace API.Controllers
 
         //Function to like a Comment
         [HttpPost("like-comment")]
-        public async Task<ActionResult<LikedCommentsDto>> LikeComment(LikedCommentsDto likedCommentsDto){
+        public async Task<ActionResult<LikedCommentsDto>> LikeComment(LikedCommentsDto likedCommentsDto)
+        {
             //This Variable gets the username from the token 
             var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             var user = await _userRepository.GetAppUserByUsernameAsync(username);
 
+            likedCommentsDto.UserId = user.Id;
+
             //Getting the Specific comment that will be liked or Disliked via the postID
             var comment = await _commentsRepository.GetCommentByIdAsync(likedCommentsDto.CommentsId);
-
-            likedCommentsDto.UserId = user.Id;
 
             if(comment == null)
                 return BadRequest("Comment does not Exist");
@@ -233,7 +248,8 @@ namespace API.Controllers
         }
 
         [HttpGet("liked-posts")]
-        public async Task<List<PostsDto>> GetPostsUserHasLiked() {
+        public async Task<List<PostsDto>> GetPostsUserHasLiked() 
+        {
             //This Variable gets the username from the token 
             var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 

@@ -1,11 +1,5 @@
-using System.Text;
-using API.Data;
 using API.Extensions;
-using API.Interfaces;
-using API.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
+using API.Helpers;
 using Microsoft.OpenApi.Models;
 
 namespace API
@@ -35,8 +29,30 @@ namespace API
            
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebAPIv5", Version = "v1" });
-            });
+                const string name = "OAuth2";
+
+                c.AddSecurityDefinition(name, new OpenApiSecurityScheme
+                {
+                    In = ParameterLocation.Header,
+                    Name = "Authorization",
+                    Scheme = "Bearer",
+                    Type = SecuritySchemeType.ApiKey
+                });
+
+                c.OperationFilter<SecurityRequirementOperationFilter>(name);
+
+                c.SwaggerDoc("v1", new OpenApiInfo 
+                { 
+                    Title = "SpencoIT API", 
+                    Version = "v1",
+                    Description = "Specno Technical Assessment (Junior Back End) - Makeshift Reddit API",
+                    Contact = new OpenApiContact
+                    {
+                        Name = "Jason Georgiou",
+                        Email = "georgiouj76@gmail.com"
+                    }
+                });
+            });    
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

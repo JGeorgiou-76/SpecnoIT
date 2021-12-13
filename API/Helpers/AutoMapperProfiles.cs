@@ -15,7 +15,6 @@ namespace API.Helpers
             CreateMap<CommentsDto, Comments>();
             CreateMap<LikedPosts, LikedPostsDto>();
             CreateMap<LikedComments, LikedCommentsDto>();
-            //CreateMap<LikedPosts, PostsDto>();
         }
     }
 }
